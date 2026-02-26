@@ -9,3 +9,5 @@ data/
 
 persistent_data/
 results/
+
+.DS_Store

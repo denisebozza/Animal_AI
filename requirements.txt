@@ -10,3 +10,5 @@ seaborn
 tqdm
 scikit-learn
 Pillow
+gradio==3.50.2
+huggingface_hub==0.19.4

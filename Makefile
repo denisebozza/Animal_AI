@@ -89,3 +89,13 @@ docker_run: docker
 		-v "$(DOCKER_PWD)/results:/app/results" \
 		-v "$(DOCKER_PWD)/data:/app/data" \
 		animal-ai
+
+run_animal_recogn:
+	$(SET_PYTHONPATH) $(R_PYTHON) -u src/animal_ai.py
+
+docker_animal_recogn: docker
+	docker run --rm --name animal-ai -p 7860:7860 \
+		-v "$(DOCKER_PWD)/persistent_data:/app/persistent_data" \
+		-v "$(DOCKER_PWD)/results:/app/results" \
+		-v "$(DOCKER_PWD)/data:/app/data" \
+		animal-ai
