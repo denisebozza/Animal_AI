@@ -1,49 +1,61 @@
 # Controlla se siamo in GitHub Actions
 IS_GITHUB := $(GITHUB_ACTIONS)
+
 # Comandi in base al SO
 ifeq ($(OS),Windows_NT)
     R_PYTHON = venv\Scripts\python.exe
-    R_PIP = venv\Scripts\pip.exe
     SET_PYTHONPATH = set PYTHONPATH=. &
-	RM = del /s /q
+    RM = del /s /q
 else
     R_PYTHON = ./venv/bin/python
-    R_PIP = ./venv/bin/pip
     SET_PYTHONPATH = PYTHONPATH=.
-	RM = rm -rf
+    RM = rm -rf
 endif
+
 # Sovrascrittura se in GitHub Actions
 ifeq ($(IS_GITHUB),true)
     R_PYTHON = python
-    R_PIP = pip
 endif
+
+# Usa sempre pip legato all'interprete
+PIP = $(R_PYTHON) -m pip
+
 # Crea venv se non esiste e non su github
 ifeq ($(IS_GITHUB),)
 venv:
 	python -m venv venv
 endif
 
-# Scarica tutte le dipendeze per preparare l'ambiente
+# Scarica tutte le dipendenze per preparare l'ambiente
 install:
-	$(R_PIP) install --upgrade pip
-	$(R_PIP) install -r requirements.txt
+	$(PIP) install --upgrade pip
+	$(PIP) install -r requirements.txt
 	@echo Installazione delle dipendenze terminata.
-# Analisi Statistica del codice sorgente
+
+# Analisi Statistica del codice sorgente (robusta: prende file ricorsivamente)
 lint:
-	$(SET_PYTHONPATH) $(R_PYTHON) -m pylint --disable=R,C src/*.py tests/*.py
+ifeq ($(OS),Windows_NT)
+	$(SET_PYTHONPATH) $(R_PYTHON) -m pylint --disable=R,C $$(powershell -NoProfile -Command "Get-ChildItem -Recurse -Filter *.py src,tests | ForEach-Object { $$_.FullName }")
+else
+	$(SET_PYTHONPATH) $(R_PYTHON) -m pylint --disable=R,C $$(find src tests -type f -name "*.py")
+endif
 	@echo Linting complete.
+
 # Unit test
 test:
 	$(SET_PYTHONPATH) $(R_PYTHON) -m pytest -vv --cov=src tests/
 	@echo Testing complete.
 
 # PACKAGING
-# 	poetry add $(cat requirements.txt) compatibile con ogni SO
 init-poetry:
-	$(R_PIP) install poetry
+	$(PIP) install poetry
 	-poetry init --no-interaction
 	$(R_PYTHON) -c "import os; [os.system(f'poetry add {line.strip()}') for line in open('requirements.txt') if line.strip()]"
-	@if not exist README.md echo "# EmotionLens AI" > README.md
+ifeq ($(OS),Windows_NT)
+	@if not exist README.md echo "# Animal AI" > README.md
+else
+	@test -f README.md || echo "# Animal AI" > README.md
+endif
 
 build:
 	$(R_PYTHON) -m build
@@ -60,3 +72,20 @@ ifeq ($(OS),Windows_NT)
 else
 	$(RM) dist/ build/ *.egg-info .pytest_cache .coverage __pycache__
 endif
+
+# Docker
+ifeq ($(OS),Windows_NT)
+    DOCKER_PWD := $(subst \,/,${CURDIR})
+else
+    DOCKER_PWD := $(CURDIR)
+endif
+
+docker:
+	docker build -t animal-ai .
+
+docker_run: docker
+	docker run --rm --name animal-ai \
+		-v "$(DOCKER_PWD)/persistent_data:/app/persistent_data" \
+		-v "$(DOCKER_PWD)/results:/app/results" \
+		-v "$(DOCKER_PWD)/data:/app/data" \
+		animal-ai

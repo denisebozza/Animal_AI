@@ -7,4 +7,5 @@ data/
 *.jpg
 *.jpeg
 
+persistent_data/
 results/

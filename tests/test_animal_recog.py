@@ -35,9 +35,9 @@ def create_dummy_dataset(base_path=DATASET_FOLDER):
 def setup_and_cleanup():
     create_dummy_dataset()
     yield
-    shutil.rmtree("./results", ignore_errors=True)
-    shutil.rmtree("./data", ignore_errors=True)
-    shutil.rmtree("./persistent_data", ignore_errors=True)
+    shutil.rmtree("./results/", ignore_errors=True)
+    shutil.rmtree("./data/", ignore_errors=True)
+    shutil.rmtree("./persistent_data/", ignore_errors=True)
 
 @patch("src.animal_recogn.download")
 def test_eda(mock_download):
